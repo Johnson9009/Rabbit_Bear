@@ -58,15 +58,17 @@ def forward_propagation(features, parameters):
 
 def compute_cost(predicts, labels):
     ''' Compute averaged cost using all samples. '''
-    return (1 / 2) * np.mean(np.dot(np.transpose(predicts - labels), (predicts - labels)))
+    samples_count = labels.shape[0]
+    return (1 / (2 * samples_count)) * np.dot(np.transpose(predicts - labels), (predicts - labels))
 
 
 def back_propagation(features, labels, predicts):
     ''' Compute the gradients of parameters. '''
     dZ = predicts - labels
+    samples_count = labels.shape[0]
     grads = {}
-    grads['W'] = np.mean(np.dot(np.transpose(features), dZ))
-    grads['b'] = np.mean(np.sum(dZ))
+    grads['W'] = (1 / samples_count) * np.dot(np.transpose(features), dZ)
+    grads['b'] = (1 / samples_count) * np.sum(dZ)
     return grads
 
 
@@ -80,7 +82,7 @@ def update_parameters(parameters, grads, learning_rate):
 def main():
     dataset_generator(1000, 350)
     epochs_count = 200
-    learning_rate = 0.0001
+    learning_rate = 0.01
 
     parameters = initialize_parameters(1)
 
