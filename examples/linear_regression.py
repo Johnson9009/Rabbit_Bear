@@ -41,12 +41,58 @@ def data_loader_iterator():
         yield (dataset[:, 0:1], dataset[:, 1:2])
 
 
+def initialize_parameters(features_count):
+    ''' Initializing all parameters this model needed. '''
+    parameters = {}
+    parameters['W'] = np.random.randn(features_count, 1)
+    parameters['b'] = np.zeros((1, 1))
+    return parameters
+
+
+def forward_propagation(features, parameters):
+    ''' Using inputs and parameters to compute the final predictions. '''
+    W = parameters['W']
+    b = parameters['b']
+    return np.dot(features, W) + b
+
+
+def compute_cost(predicts, labels):
+    ''' Compute averaged cost using all samples. '''
+    return (1 / 2) * np.mean(np.dot(np.transpose(predicts - labels), (predicts - labels)))
+
+
+def back_propagation(features, labels, predicts):
+    ''' Compute the gradients of parameters. '''
+    dZ = predicts - labels
+    grads = {}
+    grads['W'] = np.mean(np.dot(np.transpose(features), dZ))
+    grads['b'] = np.mean(np.sum(dZ))
+    return grads
+
+
+def update_parameters(parameters, grads, learning_rate):
+    ''' Update the parameters using its gradients once. '''
+    parameters['W'] -= learning_rate * grads['W']
+    parameters['b'] -= learning_rate * grads['b']
+    return parameters
+
+
 def main():
     dataset_generator(1000, 350)
-    for minibatch_X, minibatch_Y in minibatch_iterator(data_loader_iterator):
-        pass
-        # plt.scatter(minibatch_X, minibatch_Y, c='r', marker='x')
-        # plt.show()
+    epochs_count = 200
+    learning_rate = 0.0001
+
+    parameters = initialize_parameters(1)
+
+    for epoch in range(epochs_count):
+        for minibatch_features, minibatch_labels in minibatch_iterator(data_loader_iterator):
+            predicts = forward_propagation(minibatch_features, parameters)
+            minibatch_cost = compute_cost(predicts, minibatch_labels)
+            grads = back_propagation(minibatch_features, minibatch_labels, predicts)
+            parameters = update_parameters(parameters, grads, learning_rate)
+        if (epoch % 3 == 0):
+            print('Current average cost: %f' % minibatch_cost)
+    print(parameters)
 
 
 if (__name__ == '__main__'):
