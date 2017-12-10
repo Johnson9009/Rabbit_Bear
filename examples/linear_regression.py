@@ -1,7 +1,12 @@
 import os
+import logging
 import numpy as np
 import matplotlib.pyplot as plt
 from rabbitbear.dataset import minibatch_iterator
+from rabbitbear_utils.logging.logging import config_logging_yaml
+
+
+logger = logging.getLogger('linear_regression')
 
 
 def dataset_plot(x, y):
@@ -80,6 +85,7 @@ def update_parameters(parameters, grads, learning_rate):
 
 
 def main():
+    config_logging_yaml()
     dataset_generator(1000, 350)
     epochs_count = 200
     learning_rate = 0.01
@@ -93,8 +99,8 @@ def main():
             grads = back_propagation(minibatch_features, minibatch_labels, predicts)
             parameters = update_parameters(parameters, grads, learning_rate)
         if (epoch % 3 == 0):
-            print('Current average cost: %f' % minibatch_cost)
-    print(parameters)
+            logger.info('Current average cost: %f' % minibatch_cost)
+    logger.debug(parameters)
 
 
 if (__name__ == '__main__'):
