@@ -3,7 +3,7 @@ import logging
 import numpy as np
 import matplotlib.pyplot as plt
 from rabbitbear.dataset import minibatch_iterator
-from rabbitbear_utils.logging.logging import config_logging_yaml
+from rabbitbear.utils.logging import config_logging_yaml
 
 
 logger = logging.getLogger('linear_regression')
