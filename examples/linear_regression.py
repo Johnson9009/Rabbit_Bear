@@ -38,13 +38,8 @@ def dataset_generator(dataset_size, dataset_per_file):
                 dataset_filenames.append(dataset_filename)
 
 
-def data_loader_iterator(shuffle=True, only_first=False):
+def data_loader_iterator(shuffle=True):
     ''' For this exercise we need load dataset from several CSV files. '''
-    if (only_first is True):
-        with open(dataset_filenames[0]) as f:
-            dataset = np.loadtxt(f, delimiter=',')
-            return (dataset[0, 0:1], dataset[0, 1:2])
-
     for dataset_filename in dataset_filenames:
         with open(dataset_filename) as f:
             dataset = np.loadtxt(f, delimiter=',')
