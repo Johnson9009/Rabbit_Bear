@@ -45,7 +45,6 @@ class IterativeFitPlot(object):
         plt.close(self.fig)
 
 
-dataset_filenames = []
 def dataset_generator(dataset_size, dataset_per_file):
     ''' Generate dataset used in this exercise according to the dataset in file "ex1data1.txt". '''
     with open('ex1data1.txt') as f:
@@ -62,15 +61,23 @@ def dataset_generator(dataset_size, dataset_per_file):
                 for _ in range(min(dataset_per_file, dataset_size - i)):
                     generated_file.write('%f,%f' % (generated_X[i, 0], generated_Y[i, 0]) + os.linesep)
                     i += 1
-                dataset_filenames.append(dataset_filename)
 
 
-def data_loader_iterator(shuffle=True):
-    ''' For this exercise we need load dataset from several CSV files. '''
-    for dataset_filename in dataset_filenames:
-        with open(dataset_filename) as f:
-            dataset = np.loadtxt(f, delimiter=',')
-        yield (dataset[:, 0:1], dataset[:, 1:2])
+def get_data_loader(dataset_type):
+    assert (dataset_type in ['train', 'validate', 'test']), 'Unkown dataset type!'
+    dataset_dir = 'dataset' + os.path.sep + dataset_type
+    dataset_file_count = len(os.listdir(dataset_dir))
+    dataset_filenames = ['%sdataset%d.txt' % (dataset_dir + os.path.sep, x) for x in range(dataset_file_count)]
+    logger.debug('dataset_type: %s dataset_filenames: %s' % (dataset_type, dataset_filenames))
+
+    def data_loader(shuffle=True):
+        ''' For this exercise we need load dataset from several CSV files. '''
+        for dataset_filename in dataset_filenames:
+            with open(dataset_filename) as f:
+                dataset = np.loadtxt(f, delimiter=',')
+            yield (dataset[:, 0:1], dataset[:, 1:2])
+
+    return data_loader
 
 
 def initialize_parameters(features_count):
@@ -88,9 +95,19 @@ def forward_propagation(features, parameters):
     return np.dot(features, W) + b
 
 
-def compute_cost(predicts, labels, sample_axis=AxisIndex.FIRST):
+def compute_cost(predicts, labels, sample_axis=AxisIndex.FIRST, weight=1):
     ''' Compute averaged cost using all samples. '''
-    return cost.mean_squared_error(predicts, labels, sample_axis)
+    return cost.mean_squared_error(predicts, labels, sample_axis, weight=weight)
+
+
+def compute_validate_cost(data_loader, parameters, sample_axis=AxisIndex.FIRST):
+    validate_samples_count = 0
+    validate_costs = []
+    for features, labels in minibatch_iterator(data_loader, sample_axis=sample_axis, minibatch_size=None):
+        predicts = forward_propagation(features, parameters)
+        validate_samples_count += features.shape[sample_axis]
+        validate_costs.append(compute_cost(predicts, labels, weight=features.shape[sample_axis]))
+    return np.sum(np.divide(validate_costs, validate_samples_count))
 
 
 def back_propagation(features, labels, predicts):
@@ -112,7 +129,7 @@ def update_parameters(parameters, grads, learning_rate):
 
 def main():
     config_logging_yaml()
-    dataset_generator(1000, 350)
+    # dataset_generator(10000, 550)
     epochs_count = 200
     learning_rate = 0.01
 
@@ -122,7 +139,7 @@ def main():
 
     for epoch in range(epochs_count):
         minibatch_costs = []
-        for minibatch_features, minibatch_labels in minibatch_iterator(data_loader_iterator, drop_tail=True):
+        for minibatch_features, minibatch_labels in minibatch_iterator(get_data_loader('train'), drop_tail=True):
             predicts = forward_propagation(minibatch_features, parameters)
             minibatch_costs.append(compute_cost(predicts, minibatch_labels))
             grads = back_propagation(minibatch_features, minibatch_labels, predicts)
@@ -130,10 +147,11 @@ def main():
             if (epoch == 0):
                 iterFitPlot.scatter_samples(minibatch_features, minibatch_labels)
 
-        epoch_cost = np.mean(minibatch_costs)
-        logger.info('Cost after epoch %d: %f' % (epoch, epoch_cost))
+        epoch_train_cost = np.mean(minibatch_costs)
+        epoch_validate_cost = compute_validate_cost(get_data_loader('validate'), parameters)
+        logger.info('Cost after epoch %d: %f' % (epoch, epoch_train_cost))
         iterFitPlot.draw_fit_line(parameters)
-        iterCostPlot.update(epoch_cost, epoch_cost)
+        iterCostPlot.update(epoch_train_cost, epoch_validate_cost)
 
     logger.debug(parameters)
     iterFitPlot.close()

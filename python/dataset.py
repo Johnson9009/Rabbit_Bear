@@ -6,7 +6,7 @@ from .common import AxisIndex
 logger = logging.getLogger(__name__)
 
 
-def minibatch_iterator(data_loader_iterator, sample_axis=AxisIndex.FIRST,
+def minibatch_iterator(data_loader, sample_axis=AxisIndex.FIRST,
                        minibatch_size=64, shuffle=True, drop_tail=False):
     ''' This is the mini batch generator which yield one mini batch dataset each time it is called,
     this generator is only responsible for shuffling the dataset given by data loader iterator and
@@ -14,7 +14,7 @@ def minibatch_iterator(data_loader_iterator, sample_axis=AxisIndex.FIRST,
     will be called again until there isn't any more dataset from data loader. '''
     disable_batch = True if (minibatch_size is None) else False
     remain_features = remain_labels = None
-    for features, labels in data_loader_iterator(shuffle=shuffle):
+    for features, labels in data_loader(shuffle=shuffle):
         if (remain_features is not None):
             assert (remain_labels.shape[sample_axis] == remain_features.shape[sample_axis]), "Remain features don't match remain labels!"
             features = np.concatenate((remain_features, features), axis=sample_axis)
@@ -51,8 +51,8 @@ class StandardScaler(object):
     Centering and scaling happen independently on each feature by computing the relevant statistics on the samples in the training set.
     Mean and standard deviation are then stored to be used on later data using the transform method.
     '''
-    def __init__(self, data_loader_iterator, sample_axis=AxisIndex.FIRST, minibatch_size=64):
-        minibatch_iter = minibatch_iterator(data_loader_iterator, sample_axis, minibatch_size, shuffle=False)
+    def __init__(self, data_loader, sample_axis=AxisIndex.FIRST, minibatch_size=64):
+        minibatch_iter = minibatch_iterator(data_loader, sample_axis, minibatch_size, shuffle=False)
         minibatch_features, _ = next(minibatch_iter)
         features_shape = list(minibatch_features.shape)
         features_shape[sample_axis] = 1

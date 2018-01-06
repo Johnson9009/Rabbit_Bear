@@ -34,12 +34,12 @@ handlers:
 
 loggers:
   linear_regression:
-    level: DEBUG
+    level: INFO
     handlers: [console, linear_file]
     propagate: no
 
   rabbitbear:
-    level: DEBUG
+    level: INFO
     handlers: [rabbitbear_file]
     propagate: no
 
