@@ -2,7 +2,10 @@ import os
 import logging
 import numpy as np
 import matplotlib.pyplot as plt
+from rabbitbear import cost
+from rabbitbear.common import AxisIndex
 from rabbitbear.dataset import minibatch_iterator
+from rabbitbear.visualization import IterativeCostPlot
 from rabbitbear.utils.logging import config_logging_yaml
 
 
@@ -16,6 +19,30 @@ def dataset_plot(x, y):
     plt.xlabel('Population of City in 10,000s')
     plt.ylabel('Profit in $10,000s')
     plt.show()
+
+
+class IterativeFitPlot(object):
+    '''Draw the fitting figure using data got gradually, the fitting line will be changed iteratively.'''
+    def __init__(self):
+        self.fig, self.ax = plt.subplots()
+        self.ax.set_title('Scatter plot of training data')
+        self.ax.set_xlabel('Population of City in 10,000s')
+        self.ax.set_ylabel('Profit in $10,000s')
+        self.ax.scatter([], [], c='r', marker='x', label='Training data')
+        self.line, = self.ax.plot([], [], label='Linear regression')
+        self.ax.legend()
+
+    def scatter_samples(self, x, y):
+        self.ax.scatter(x, y, c='r', marker='x', label='Training data')
+        plt.pause(0.000001)
+
+    def draw_fit_line(self, parameters):
+        x = self.ax.get_xticks().reshape((-1, 1))
+        self.line.set_data(x, forward_propagation(x, parameters))
+        plt.pause(0.000001)
+
+    def close(self):
+        plt.close(self.fig)
 
 
 dataset_filenames = []
@@ -61,10 +88,9 @@ def forward_propagation(features, parameters):
     return np.dot(features, W) + b
 
 
-def compute_cost(predicts, labels):
+def compute_cost(predicts, labels, sample_axis=AxisIndex.FIRST):
     ''' Compute averaged cost using all samples. '''
-    samples_count = labels.shape[0]
-    return (1 / (2 * samples_count)) * np.dot(np.transpose(predicts - labels), (predicts - labels))
+    return cost.mean_squared_error(predicts, labels, sample_axis)
 
 
 def back_propagation(features, labels, predicts):
@@ -90,17 +116,28 @@ def main():
     epochs_count = 200
     learning_rate = 0.01
 
+    iterFitPlot = IterativeFitPlot()
+    iterCostPlot = IterativeCostPlot(learning_rate)
     parameters = initialize_parameters(1)
 
     for epoch in range(epochs_count):
-        for minibatch_features, minibatch_labels in minibatch_iterator(data_loader_iterator):
+        minibatch_costs = []
+        for minibatch_features, minibatch_labels in minibatch_iterator(data_loader_iterator, drop_tail=True):
             predicts = forward_propagation(minibatch_features, parameters)
-            minibatch_cost = compute_cost(predicts, minibatch_labels)
+            minibatch_costs.append(compute_cost(predicts, minibatch_labels))
             grads = back_propagation(minibatch_features, minibatch_labels, predicts)
             parameters = update_parameters(parameters, grads, learning_rate)
-        if (epoch % 3 == 0):
-            logger.info('Current average cost: %f' % minibatch_cost)
+            if (epoch == 0):
+                iterFitPlot.scatter_samples(minibatch_features, minibatch_labels)
+
+        epoch_cost = np.mean(minibatch_costs)
+        logger.info('Cost after epoch %d: %f' % (epoch, epoch_cost))
+        iterFitPlot.draw_fit_line(parameters)
+        iterCostPlot.update(epoch_cost, epoch_cost)
+
     logger.debug(parameters)
+    iterFitPlot.close()
+    iterCostPlot.close()
 
 
 if (__name__ == '__main__'):
