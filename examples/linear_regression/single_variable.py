@@ -10,7 +10,7 @@ from rabbitbear.utils.logging import config_logging_yaml
 from mpl_toolkits.mplot3d import Axes3D
 
 
-logger = logging.getLogger('linear_regression')
+logger = logging.getLogger(os.path.splitext(os.path.basename(__file__))[0])
 
 
 def dataset_plot(x, y):

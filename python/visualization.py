@@ -18,6 +18,7 @@ class IterativeCostPlot(object):
         self.epochs = []
         self.xlim_max = 10 * step
         self.ylim_max = 0
+        self.ylim_min = float('inf')
         self.fig, self.ax = plt.subplots()
         self.ax.set_title('Cost Changing During Learning' + os.linesep +
                           'learning rate = %f' % learning_rate)
@@ -36,10 +37,15 @@ class IterativeCostPlot(object):
 
             self.train_cost_line.set_data(self.epochs, self.train_costs)
             self.validate_cost_line.set_data(self.epochs, self.validate_costs)
-            max_cost = train_cost if (train_cost > validate_cost) else validate_cost
+
+            max_cost = max(train_cost, validate_cost)
+            min_cost = min(train_cost, validate_cost)
             if (max_cost * 1.3 >= self.ylim_max):
                 self.ylim_max = max_cost * 1.3
-                self.ax.set_ylim(0, self.ylim_max)
+                self.ax.set_ylim(top=self.ylim_max)
+            if (min_cost * 0.7 <= self.ylim_min):
+                self.ylim_min = min_cost * 0.7
+                self.ax.set_ylim(bottom=self.ylim_min)
             plt.pause(0.000001)
 
         self.epoch_index += 1
