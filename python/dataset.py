@@ -58,16 +58,25 @@ class StandardScaler(object):
         features_shape[sample_axis] = 1
 
         self._mean = np.zeros(tuple(features_shape))
-        self._stddev = np.ones(tuple(features_shape));
-        self._samples_count = 0;
+        self._variance = np.zeros(tuple(features_shape))
+        self._samples_count = 0
 
         while(True):
             try:
+                # Compute mean iteratively, the basic idea is cur_sum = pre_mean * pre_cnt + new_sum
                 count = minibatch_features.shape[sample_axis]
-                self._samples_count += count;
-                self._mean += (count / self._samples_count) * (np.sum((1 / count) * minibatch_features,
-                                                                      axis=sample_axis, keepdims=True) - self._mean)
-                # TODO: Incremental iterative standard deviation computation.
+                pre_samples_cnt = self._samples_count
+                self._samples_count += count
+                self._mean += (np.sum((minibatch_features / self._samples_count), axis=sample_axis, keepdims=True) -
+                               (count / self._samples_count) * self._mean)
+                # Compute variance iteratively
+                if (pre_samples_cnt != 0):
+                    self._variance += ((np.sum((np.square(minibatch_features) / self._samples_count), axis=sample_axis, keepdims=True) -
+                                        2 * np.sum((self._mean * minibatch_features / pre_samples_cnt), axis=sample_axis, keepdims=True) +
+                                        (count / pre_samples_cnt) * np.square(self._mean) +
+                                        np.square(np.sum((minibatch_features / np.sqrt(self._samples_count * pre_samples_cnt)),
+                                                         axis=sample_axis, keepdims=True))) -
+                                       (count / self._samples_count) * self._variance)
                 minibatch_features, _ = next(minibatch_iter)
             except StopIteration:
                 break
@@ -75,4 +84,4 @@ class StandardScaler(object):
 
     def transform(self, features):
         '''Scaling features of X according to feature_range.'''
-        return (features - self._mean) / self._stddev
+        return (features - self._mean) / np.sqrt(self._variance)

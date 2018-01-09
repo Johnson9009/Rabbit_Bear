@@ -7,6 +7,7 @@ from rabbitbear.common import AxisIndex
 from rabbitbear.dataset import minibatch_iterator
 from rabbitbear.visualization import IterativeCostPlot
 from rabbitbear.utils.logging import config_logging_yaml
+from mpl_toolkits.mplot3d import Axes3D
 
 
 logger = logging.getLogger('linear_regression')
@@ -43,6 +44,34 @@ class IterativeFitPlot(object):
 
     def close(self):
         plt.close(self.fig)
+
+
+def cost_visualization(data_loader, parameters, sample_axis=AxisIndex.FIRST):
+    meshgrid_w, meshgrid_b = np.meshgrid(np.linspace(-1, 4, 10), np.linspace(-10, 10, 10))
+    meshgrid_costs = []
+    for w, b in zip(np.ravel(meshgrid_w), np.ravel(meshgrid_b)):
+        cur_parameters = {'W' : w, 'b' : b}
+        meshgrid_costs.append(compute_dataset_cost(data_loader, cur_parameters, sample_axis))
+    meshgrid_costs = np.reshape(meshgrid_costs, meshgrid_w.shape)
+
+    # set up a figure twice as wide as it is tall
+    fig = plt.figure(figsize=plt.figaspect(0.5))
+    fig.suptitle('Visualization of Cost Function')
+
+    ax = fig.add_subplot(1, 2, 1, projection='3d')
+    ax.plot_surface(meshgrid_b, meshgrid_w, meshgrid_costs)
+    ax.set_title('Surface')
+    ax.set_xlabel('b')
+    ax.set_ylabel('w')
+
+    ax = fig.add_subplot(1, 2, 2)
+    ax.contour(meshgrid_b, meshgrid_w, meshgrid_costs, np.logspace(-2, 3, 20))
+    ax.set_title('Contour, showing minimum')
+    ax.set_xlabel('b')
+    ax.set_ylabel('w')
+
+    ax.plot(parameters['b'], parameters['W'], c='r', marker='x')
+    plt.show()
 
 
 def dataset_generator(dataset_size, dataset_per_file):
@@ -100,14 +129,14 @@ def compute_cost(predicts, labels, sample_axis=AxisIndex.FIRST, weight=1):
     return cost.mean_squared_error(predicts, labels, sample_axis, weight=weight)
 
 
-def compute_validate_cost(data_loader, parameters, sample_axis=AxisIndex.FIRST):
-    validate_samples_count = 0
-    validate_costs = []
+def compute_dataset_cost(data_loader, parameters, sample_axis=AxisIndex.FIRST):
+    samples_count = 0
+    costs = []
     for features, labels in minibatch_iterator(data_loader, sample_axis=sample_axis, minibatch_size=None):
         predicts = forward_propagation(features, parameters)
-        validate_samples_count += features.shape[sample_axis]
-        validate_costs.append(compute_cost(predicts, labels, weight=features.shape[sample_axis]))
-    return np.sum(np.divide(validate_costs, validate_samples_count))
+        samples_count += features.shape[sample_axis]
+        costs.append(compute_cost(predicts, labels, weight=features.shape[sample_axis]))
+    return np.sum(np.divide(costs, samples_count))
 
 
 def back_propagation(features, labels, predicts):
@@ -148,7 +177,7 @@ def main():
                 iterFitPlot.scatter_samples(minibatch_features, minibatch_labels)
 
         epoch_train_cost = np.mean(minibatch_costs)
-        epoch_validate_cost = compute_validate_cost(get_data_loader('validate'), parameters)
+        epoch_validate_cost = compute_dataset_cost(get_data_loader('validate'), parameters)
         logger.info('Cost after epoch %d: %f' % (epoch, epoch_train_cost))
         iterFitPlot.draw_fit_line(parameters)
         iterCostPlot.update(epoch_train_cost, epoch_validate_cost)
@@ -156,6 +185,7 @@ def main():
     logger.debug(parameters)
     iterFitPlot.close()
     iterCostPlot.close()
+    cost_visualization(get_data_loader('test'), parameters)
 
 
 if (__name__ == '__main__'):

@@ -6,6 +6,7 @@ from rabbitbear.dataset import StandardScaler
 samples_count = 1000
 features_count = 3
 sample_axis = AxisIndex.LAST
+tolerance = 0.0003
 
 
 def generate_features():
@@ -30,10 +31,16 @@ def data_loader_iterator(shuffle=True):
 def main():
     standard_scaler = StandardScaler(data_loader_iterator, sample_axis, minibatch_size=32)
 
-    golden_mean_shape = (1, features_count) if (sample_axis == AxisIndex.FIRST) else (features_count, 1)
-    assert(standard_scaler._mean.shape == golden_mean_shape)
+    golden_shape = (1, features_count) if (sample_axis == AxisIndex.FIRST) else (features_count, 1)
+    assert(standard_scaler._mean.shape == golden_shape)
     golden_mean = np.mean(generate_features(), axis=sample_axis, keepdims=True)
-    assert((standard_scaler._mean == golden_mean).all())
+    difference_rate = abs(standard_scaler._mean - golden_mean) / standard_scaler._mean
+    assert((difference_rate < tolerance).all())
+
+    assert(standard_scaler._variance.shape == golden_shape)
+    golden_variance = np.var(generate_features(), axis=sample_axis, keepdims=True)
+    difference_rate = abs(standard_scaler._variance - golden_variance) / standard_scaler._variance
+    assert((difference_rate < tolerance).all())
 
     assert(standard_scaler._samples_count == samples_count)
 
