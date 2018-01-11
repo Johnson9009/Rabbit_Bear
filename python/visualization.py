@@ -1,6 +1,7 @@
 import os
 import logging
 import matplotlib.pyplot as plt
+from assertpy import assert_that
 
 
 logger = logging.getLogger(__name__)
@@ -32,9 +33,9 @@ class IterativeCostPlot(object):
         self.ax.legend()
 
     def update(self, train_cost, validate_cost=None):
-        assert (((self.has_validate is True) and (validate_cost is not None)) or
-                ((self.has_validate is False) and (validate_cost is None))), \
-                'has_validate: %s, validate_cost: %f' % (self.has_validate, validate_cost)
+        assert_that(((self.has_validate is True) and (validate_cost is not None)) or
+                    ((self.has_validate is False) and (validate_cost is None)),
+                    'has_validate: {}, validate_cost: {}'.format(self.has_validate, validate_cost)).is_true()
         if (self.epoch_index % self.step == 0):
             self.epochs.append(self.epoch_index)
             self.train_costs.append(train_cost)

@@ -2,6 +2,7 @@ import os
 import logging
 import numpy as np
 import matplotlib.pyplot as plt
+from assertpy import assert_that
 from rabbitbear import cost
 from rabbitbear.common import AxisIndex
 from rabbitbear.dataset import minibatch_iterator
@@ -93,7 +94,7 @@ def dataset_generator(dataset_size, dataset_per_file):
 
 
 def get_data_loader(dataset_type):
-    assert (dataset_type in ['train', 'validate', 'test']), 'Unkown dataset type!'
+    assert_that(dataset_type).is_in('train', 'validate', 'test')
     dataset_dir = 'dataset' + os.path.sep + dataset_type
     dataset_file_count = len(os.listdir(dataset_dir))
     dataset_filenames = ['%sdataset%d.txt' % (dataset_dir + os.path.sep, x) for x in range(dataset_file_count)]

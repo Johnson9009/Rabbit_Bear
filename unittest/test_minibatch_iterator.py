@@ -1,8 +1,11 @@
 import numpy as np
+from assertpy import assert_that
 from rabbitbear.dataset import minibatch_iterator
 
 
-dataset_filenames = ['../examples/dataset0.txt', '../examples/dataset1.txt', '../examples/dataset2.txt']
+dataset_filenames = ['../examples/linear_regression/dataset/test/dataset0.txt',
+                     '../examples/linear_regression/dataset/test/dataset1.txt',
+                     '../examples/linear_regression/dataset/test/dataset2.txt']
 
 
 def data_loader_iterator(shuffle=True):
@@ -32,7 +35,7 @@ def main():
     shuffle = True
 
     golden_features, golden_labels = get_whole_golden_dataset()
-    assert (np.shape(golden_features)[0] == np.shape(golden_labels)[0]), "golden features don't match golden labels!"
+    assert_that(np.shape(golden_features)[0]).is_equal_to( np.shape(golden_labels)[0])
 
     dropped_count = np.shape(golden_features)[0] % minibatch_size if (minibatch_size is not None) else 0
     dropped_features = golden_features[len(golden_features) - dropped_count : ]
@@ -40,17 +43,17 @@ def main():
 
     for minibatch_features, minibatch_labels in minibatch_iterator(data_loader_iterator, minibatch_size=minibatch_size,
                                                                    shuffle=shuffle, drop_tail=True):
-        assert (minibatch_features.shape[0] == minibatch_labels.shape[0]), "minibatch features don't match minibatch labels!"
+        assert_that(minibatch_features.shape[0]).is_equal_to(minibatch_labels.shape[0])
         for feature, label in zip(minibatch_features, minibatch_labels):
             golden_features.remove(feature)
             golden_labels.remove(label)
-    assert (np.shape(golden_features)[0] == np.shape(golden_labels)[0]), "After removing minibatch, golden features don't match golden labels!"
-    assert (np.shape(golden_features)[0] == np.shape(dropped_features)[0]), "Remain samples don't match dropped samples!"
+    assert_that(np.shape(golden_features)[0]).is_equal_to(np.shape(golden_labels)[0])
+    assert_that(np.shape(golden_features)[0]).is_equal_to(np.shape(dropped_features)[0])
 
     for dropped_feature, dropped_label in zip(dropped_features, dropped_labels):
         golden_features.remove(dropped_feature)
         golden_labels.remove(dropped_label)
-    assert (np.shape(golden_features)[0] == 0), 'Impossible!'
+    assert_that(np.shape(golden_features)[0]).is_equal_to(0)
 
 
 if (__name__ == '__main__'):

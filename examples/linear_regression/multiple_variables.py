@@ -1,7 +1,6 @@
 import os
 import logging
 import numpy as np
-import matplotlib.pyplot as plt
 from rabbitbear import cost
 from rabbitbear.common import AxisIndex
 from rabbitbear.dataset import minibatch_iterator, StandardScaler

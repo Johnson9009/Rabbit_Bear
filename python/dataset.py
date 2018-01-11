@@ -1,5 +1,6 @@
 import logging
 import numpy as np
+from assertpy import assert_that
 from .common import AxisIndex, get_unit_shape
 
 
@@ -16,7 +17,7 @@ def minibatch_iterator(data_loader, sample_axis=AxisIndex.FIRST,
     remain_features = remain_labels = None
     for features, labels in data_loader(shuffle=shuffle):
         if (remain_features is not None):
-            assert (remain_labels.shape[sample_axis] == remain_features.shape[sample_axis]), "Remain features don't match remain labels!"
+            assert_that(remain_labels.shape[sample_axis]).is_equal_to(remain_features.shape[sample_axis])
             features = np.concatenate((remain_features, features), axis=sample_axis)
             labels = np.concatenate((remain_labels, labels), axis=sample_axis)
             logger.debug('Concatenated remain %d' % remain_features.shape[sample_axis])
@@ -29,8 +30,8 @@ def minibatch_iterator(data_loader, sample_axis=AxisIndex.FIRST,
         logger.debug('samples_count:%d, minibatches_count:%d, processable_count:%d' % (samples_count, minibatches_count, processable_count))
 
         for i in range(minibatches_count):
-            minibatch_features = features.take(sample_indexes[i * minibatch_size : (i + 1) * minibatch_size], axis=sample_axis)
-            minibatch_labels = labels.take(sample_indexes[i * minibatch_size : (i + 1) * minibatch_size], axis=sample_axis)
+            minibatch_features = features.take(sample_indexes[i * minibatch_size:(i + 1) * minibatch_size], axis=sample_axis)
+            minibatch_labels = labels.take(sample_indexes[i * minibatch_size:(i + 1) * minibatch_size], axis=sample_axis)
             yield (minibatch_features, minibatch_labels)
 
         if (processable_count < samples_count):
@@ -41,7 +42,7 @@ def minibatch_iterator(data_loader, sample_axis=AxisIndex.FIRST,
             remain_features = remain_labels = None
 
     if ((drop_tail is False) and (remain_features is not None)):
-        assert (remain_labels.shape[sample_axis] == remain_features.shape[sample_axis]), "Remain features don't match remain labels!"
+        assert_that(remain_labels.shape[sample_axis]).is_equal_to(remain_features.shape[sample_axis])
         yield (remain_features, remain_labels)
 
 
@@ -83,8 +84,7 @@ class StandardScaler(object):
             except StopIteration:
                 break
 
-
     def transform(self, features):
         '''Scaling features of X according to feature_range.'''
-        assert (get_unit_shape(features, self._sample_axis) == self._mean.shape)
+        assert_that(get_unit_shape(features, self._sample_axis)).is_equal_to(self._mean.shape)
         return (features - self._mean) / np.sqrt(self._variance)

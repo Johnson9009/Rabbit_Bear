@@ -1,4 +1,5 @@
 import numpy as np
+from assertpy import assert_that
 from rabbitbear.common import AxisIndex
 from rabbitbear.dataset import StandardScaler
 
@@ -32,17 +33,17 @@ def main():
     standard_scaler = StandardScaler(data_loader_iterator, sample_axis, minibatch_size=32)
 
     golden_shape = (1, features_count) if (sample_axis == AxisIndex.FIRST) else (features_count, 1)
-    assert(standard_scaler._mean.shape == golden_shape)
+    assert_that(standard_scaler._mean.shape).is_equal_to(golden_shape)
     golden_mean = np.mean(generate_features(), axis=sample_axis, keepdims=True)
     difference_rate = abs(standard_scaler._mean - golden_mean) / standard_scaler._mean
-    assert((difference_rate < tolerance).all())
+    assert_that((difference_rate < tolerance).all()).is_true()
 
-    assert(standard_scaler._variance.shape == golden_shape)
+    assert_that(standard_scaler._variance.shape).is_equal_to(golden_shape)
     golden_variance = np.var(generate_features(), axis=sample_axis, keepdims=True)
     difference_rate = abs(standard_scaler._variance - golden_variance) / standard_scaler._variance
-    assert((difference_rate < tolerance).all())
+    assert_that((difference_rate < tolerance).all()).is_true()
 
-    assert(standard_scaler._samples_count == samples_count)
+    assert_that(standard_scaler._samples_count).is_equal_to(samples_count)
 
 
 if (__name__ == '__main__'):
