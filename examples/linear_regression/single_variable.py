@@ -163,7 +163,7 @@ def main():
     learning_rate = 0.01
 
     iterFitPlot = IterativeFitPlot()
-    iterCostPlot = IterativeCostPlot(learning_rate)
+    iterCostPlot = IterativeCostPlot(learning_rate, has_validate=True, step=5)
     parameters = initialize_parameters(1)
 
     for epoch in range(epochs_count):

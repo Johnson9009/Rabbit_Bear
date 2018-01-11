@@ -6,7 +6,7 @@ from rabbitbear.dataset import StandardScaler
 samples_count = 1000
 features_count = 3
 sample_axis = AxisIndex.LAST
-tolerance = 0.0003
+tolerance = 3.0e-14
 
 
 def generate_features():

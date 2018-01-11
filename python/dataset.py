@@ -1,6 +1,6 @@
 import logging
 import numpy as np
-from .common import AxisIndex
+from .common import AxisIndex, get_unit_shape
 
 
 logger = logging.getLogger(__name__)
@@ -54,11 +54,10 @@ class StandardScaler(object):
     def __init__(self, data_loader, sample_axis=AxisIndex.FIRST, minibatch_size=64):
         minibatch_iter = minibatch_iterator(data_loader, sample_axis, minibatch_size, shuffle=False)
         minibatch_features, _ = next(minibatch_iter)
-        features_shape = list(minibatch_features.shape)
-        features_shape[sample_axis] = 1
 
-        self._mean = np.zeros(tuple(features_shape))
-        self._variance = np.zeros(tuple(features_shape))
+        self._sample_axis = sample_axis
+        self._mean = np.zeros(get_unit_shape(minibatch_features, sample_axis))
+        self._variance = np.zeros(get_unit_shape(minibatch_features, sample_axis))
         self._samples_count = 0
 
         while(True):
@@ -70,7 +69,10 @@ class StandardScaler(object):
                 self._mean += (np.sum((minibatch_features / self._samples_count), axis=sample_axis, keepdims=True) -
                                (count / self._samples_count) * self._mean)
                 # Compute variance iteratively
-                if (pre_samples_cnt != 0):
+                if (pre_samples_cnt == 0):
+                    self._variance += np.sum(np.square(minibatch_features - self._mean) / self._samples_count,
+                                             axis=sample_axis, keepdims=True)
+                else:
                     self._variance += ((np.sum((np.square(minibatch_features) / self._samples_count), axis=sample_axis, keepdims=True) -
                                         2 * np.sum((self._mean * minibatch_features / pre_samples_cnt), axis=sample_axis, keepdims=True) +
                                         (count / pre_samples_cnt) * np.square(self._mean) +
@@ -84,4 +86,5 @@ class StandardScaler(object):
 
     def transform(self, features):
         '''Scaling features of X according to feature_range.'''
+        assert (get_unit_shape(features, self._sample_axis) == self._mean.shape)
         return (features - self._mean) / np.sqrt(self._variance)

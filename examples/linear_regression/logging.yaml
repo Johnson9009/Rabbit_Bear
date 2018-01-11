@@ -23,6 +23,15 @@ handlers:
     backupCount: 20
     encoding: utf8
 
+  multiple_variables_file:
+    class: logging.handlers.RotatingFileHandler
+    level: DEBUG
+    formatter: simple
+    filename: multiple_variables.log
+    maxBytes: 10485760 # 10MB
+    backupCount: 20
+    encoding: utf8
+
   rabbitbear_file:
     class: logging.handlers.RotatingFileHandler
     level: DEBUG
@@ -36,6 +45,11 @@ loggers:
   single_variable:
     level: INFO
     handlers: [console, single_variable_file]
+    propagate: no
+
+  multiple_variables:
+    level: DEBUG 
+    handlers: [console, multiple_variables_file]
     propagate: no
 
   rabbitbear:

@@ -10,7 +10,8 @@ class IterativeCostPlot(object):
     '''Draw the cost changing along with training epoch increasing using data got gradually,
     costs of the training and validating datasets will be displayed, and all the lines can
     be drawn in real time.'''
-    def __init__(self, learning_rate, step=1):
+    def __init__(self, learning_rate, has_validate=False, step=1):
+        self.has_validate = has_validate
         self.step = step
         self.epoch_index = 0
         self.train_costs = []
@@ -26,17 +27,24 @@ class IterativeCostPlot(object):
         self.ax.set_ylabel('cost')
         self.ax.set_xlim(0, self.xlim_max)
         self.train_cost_line, = self.ax.plot(self.epochs, self.train_costs, label='Train Set')
-        self.validate_cost_line, = self.ax.plot(self.epochs, self.validate_costs, label='Validate Set')
+        if (has_validate is True):
+            self.validate_cost_line, = self.ax.plot(self.epochs, self.validate_costs, label='Validate Set')
         self.ax.legend()
 
-    def update(self, train_cost, validate_cost):
+    def update(self, train_cost, validate_cost=None):
+        assert (((self.has_validate is True) and (validate_cost is not None)) or
+                ((self.has_validate is False) and (validate_cost is None))), \
+                'has_validate: %s, validate_cost: %f' % (self.has_validate, validate_cost)
         if (self.epoch_index % self.step == 0):
             self.epochs.append(self.epoch_index)
             self.train_costs.append(train_cost)
-            self.validate_costs.append(validate_cost)
-
             self.train_cost_line.set_data(self.epochs, self.train_costs)
-            self.validate_cost_line.set_data(self.epochs, self.validate_costs)
+
+            if (self.has_validate is True):
+                self.validate_costs.append(validate_cost)
+                self.validate_cost_line.set_data(self.epochs, self.validate_costs)
+            else:
+                validate_cost = train_cost
 
             max_cost = max(train_cost, validate_cost)
             min_cost = min(train_cost, validate_cost)
