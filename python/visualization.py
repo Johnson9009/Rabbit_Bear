@@ -66,4 +66,3 @@ class IterativeCostPlot(object):
         if (hold_before_close is True):
             plt.show()
         plt.close(self.fig)
-
