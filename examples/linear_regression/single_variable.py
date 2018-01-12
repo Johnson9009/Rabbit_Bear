@@ -133,7 +133,7 @@ def compute_cost(predicts, labels, sample_axis=AxisIndex.FIRST, weight=1):
 def compute_dataset_cost(data_loader, parameters, sample_axis=AxisIndex.FIRST):
     samples_count = 0
     costs = []
-    for features, labels in minibatch_iterator(data_loader, sample_axis=sample_axis, minibatch_size=None):
+    for features, labels in minibatch_iterator(data_loader, sample_axis, minibatch_size=None):
         predicts = forward_propagation(features, parameters)
         samples_count += features.shape[sample_axis]
         costs.append(compute_cost(predicts, labels, weight=features.shape[sample_axis]))

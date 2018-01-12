@@ -62,6 +62,8 @@ class IterativeCostPlot(object):
             self.xlim_max += 10 * self.step
             self.ax.set_xlim(0, self.xlim_max)
 
-    def close(self):
+    def close(self, hold_before_close=True):
+        if (hold_before_close is True):
+            plt.show()
         plt.close(self.fig)
 

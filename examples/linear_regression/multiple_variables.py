@@ -77,9 +77,9 @@ def predict(features, parameters, sample_axis=AxisIndex.FIRST):
 
 def main():
     config_logging_yaml()
-    epochs_count = 400
-    learning_rate = 0.01
-    sample_axis = AxisIndex.LAST
+    epochs_count = 50
+    learning_rate = 1
+    sample_axis = AxisIndex.FIRST
 
     iterCostPlot = IterativeCostPlot(learning_rate, step=5)
     standard_scaler = StandardScaler(get_data_loader(sample_axis), sample_axis, minibatch_size=None)
