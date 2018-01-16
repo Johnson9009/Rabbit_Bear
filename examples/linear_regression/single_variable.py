@@ -127,7 +127,7 @@ def forward_propagation(features, parameters):
 
 def compute_cost(predicts, labels, sample_axis=AxisIndex.FIRST, weight=1):
     ''' Compute averaged cost using all samples. '''
-    return cost.mean_squared_error(predicts, labels, sample_axis, weight=weight)
+    return cost.l2_loss(predicts, labels, sample_axis, weight=weight)
 
 
 def compute_dataset_cost(data_loader, parameters, sample_axis=AxisIndex.FIRST):

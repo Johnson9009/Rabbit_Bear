@@ -31,7 +31,7 @@ def initialize_parameters(features_count, sample_axis=AxisIndex.FIRST):
     w_shape = (features_count, 1)
     if (sample_axis == AxisIndex.LAST):
         w_shape = (1, features_count)
-    parameters['W'] = np.random.randn(w_shape[0], w_shape[1])
+    parameters['W'] = np.random.randn(*w_shape)
     parameters['b'] = np.zeros((1, 1))
     return parameters
 
@@ -48,7 +48,7 @@ def forward_propagation(features, parameters, sample_axis=AxisIndex.FIRST):
 
 def compute_cost(predicts, labels, sample_axis=AxisIndex.FIRST, weight=1):
     ''' Compute averaged cost using all samples. '''
-    return cost.mean_squared_error(predicts, labels, sample_axis, weight=weight)
+    return cost.l2_loss(predicts, labels, sample_axis, weight=weight)
 
 
 def back_propagation(features, labels, predicts, sample_axis=AxisIndex.FIRST):

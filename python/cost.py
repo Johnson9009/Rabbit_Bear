@@ -2,7 +2,7 @@ import numpy as np
 from .common import AxisIndex
 
 
-def mean_squared_error(predicts, labels, sample_axis=AxisIndex.FIRST, weight=1):
+def l2_loss(predicts, labels, sample_axis=AxisIndex.FIRST, weight=1):
     '''Calculates the mean squared error between `predicts` and `labels`.
 
     Parameters
