@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from assertpy import assert_that
 from rabbitbear import cost
-from rabbitbear.common import AxisIndex
+from rabbitbear.common import AxisIndex, RecurrenceMean
 from rabbitbear.dataset import minibatch_iterator
 from rabbitbear.visualization import IterativeCostPlot
 from rabbitbear.utils.logging import config_logging_yaml
@@ -43,7 +43,9 @@ class IterativeFitPlot(object):
         self.line.set_data(x, forward_propagation(x, parameters))
         plt.pause(0.000001)
 
-    def close(self):
+    def close(self, hold_before_close=True):
+        if (hold_before_close is True):
+            plt.show()
         plt.close(self.fig)
 
 
@@ -105,7 +107,7 @@ def get_data_loader(dataset_type):
         for dataset_filename in dataset_filenames:
             with open(dataset_filename) as f:
                 dataset = np.loadtxt(f, delimiter=',')
-            yield (dataset[:, 0:1], dataset[:, 1:2])
+            yield (dataset[:, 0:1], dataset[:, 1:2], dataset.shape[0])
 
     return data_loader
 
@@ -125,19 +127,17 @@ def forward_propagation(features, parameters):
     return np.dot(features, W) + b
 
 
-def compute_cost(predicts, labels, sample_axis=AxisIndex.FIRST, weight=1):
+def compute_cost(predicts, labels, sample_axis=AxisIndex.FIRST):
     ''' Compute averaged cost using all samples. '''
-    return cost.l2_loss(predicts, labels, sample_axis, weight=weight)
+    return cost.l2_loss(predicts, labels, sample_axis)
 
 
 def compute_dataset_cost(data_loader, parameters, sample_axis=AxisIndex.FIRST):
-    samples_count = 0
-    costs = []
-    for features, labels in minibatch_iterator(data_loader, sample_axis, minibatch_size=None):
+    recurrence_mean = RecurrenceMean()
+    for features, labels, count in minibatch_iterator(data_loader, sample_axis, minibatch_size=None):
         predicts = forward_propagation(features, parameters)
-        samples_count += features.shape[sample_axis]
-        costs.append(compute_cost(predicts, labels, weight=features.shape[sample_axis]))
-    return np.sum(np.divide(costs, samples_count))
+        recurrence_mean(count, compute_cost(predicts, labels))
+    return np.squeeze(recurrence_mean.mean)
 
 
 def back_propagation(features, labels, predicts):
@@ -168,16 +168,16 @@ def main():
     parameters = initialize_parameters(1)
 
     for epoch in range(epochs_count):
-        minibatch_costs = []
-        for minibatch_features, minibatch_labels in minibatch_iterator(get_data_loader('train'), drop_tail=True):
-            predicts = forward_propagation(minibatch_features, parameters)
-            minibatch_costs.append(compute_cost(predicts, minibatch_labels))
-            grads = back_propagation(minibatch_features, minibatch_labels, predicts)
+        recurrence_mean = RecurrenceMean()
+        for mini_features, mini_labels, mini_count in minibatch_iterator(get_data_loader('train'), drop_tail=True):
+            mini_predicts = forward_propagation(mini_features, parameters)
+            recurrence_mean(mini_count, compute_cost(mini_predicts, mini_labels))
+            grads = back_propagation(mini_features, mini_labels, mini_predicts)
             parameters = update_parameters(parameters, grads, learning_rate)
             if (epoch == 0):
-                iterFitPlot.scatter_samples(minibatch_features, minibatch_labels)
+                iterFitPlot.scatter_samples(mini_features, mini_labels)
 
-        epoch_train_cost = np.mean(minibatch_costs)
+        epoch_train_cost = np.squeeze(recurrence_mean.mean)
         epoch_validate_cost = compute_dataset_cost(get_data_loader('validate'), parameters)
         logger.info('Cost after epoch %d: %f' % (epoch, epoch_train_cost))
         iterFitPlot.draw_fit_line(parameters)

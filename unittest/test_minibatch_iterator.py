@@ -8,12 +8,12 @@ dataset_filenames = ['../examples/linear_regression/dataset/test/dataset0.txt',
                      '../examples/linear_regression/dataset/test/dataset2.txt']
 
 
-def data_loader_iterator(shuffle=True):
+def data_loader(shuffle=True):
     ''' For this exercise we need load dataset from several CSV files. '''
     for dataset_filename in dataset_filenames:
         with open(dataset_filename) as f:
             dataset = np.loadtxt(f, delimiter=',')
-        yield (dataset[:, 0:1], dataset[:, 1:2])
+        yield (dataset[:, 0:1], dataset[:, 1:2], dataset.shape[0])
 
 
 def get_whole_golden_dataset():
@@ -41,10 +41,9 @@ def main():
     dropped_features = golden_features[len(golden_features) - dropped_count : ]
     dropped_labels = golden_labels[len(golden_labels) - dropped_count : ]
 
-    for minibatch_features, minibatch_labels in minibatch_iterator(data_loader_iterator, minibatch_size=minibatch_size,
-                                                                   shuffle=shuffle, drop_tail=True):
-        assert_that(minibatch_features.shape[0]).is_equal_to(minibatch_labels.shape[0])
-        for feature, label in zip(minibatch_features, minibatch_labels):
+    for mini_features, mini_labels, _ in minibatch_iterator(data_loader, minibatch_size, shuffle, drop_tail=True):
+        assert_that(mini_features.shape[0]).is_equal_to(mini_labels.shape[0])
+        for feature, label in zip(mini_features, mini_labels):
             golden_features.remove(feature)
             golden_labels.remove(label)
     assert_that(np.shape(golden_features)[0]).is_equal_to(np.shape(golden_labels)[0])

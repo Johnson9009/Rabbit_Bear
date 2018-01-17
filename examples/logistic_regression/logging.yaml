@@ -1,0 +1,63 @@
+---
+version: 1
+disable_existing_loggers: False
+formatters:
+  raw:
+    format: "%(message)s"
+  simple:
+    format: "[%(name)s][%(levelname)s][%(asctime)s]  %(message)s"
+
+handlers:
+  console:
+    class: logging.StreamHandler
+    level: INFO
+    formatter: raw
+    stream: ext://sys.stdout
+
+  admission_file:
+    class: logging.handlers.RotatingFileHandler
+    level: DEBUG
+    formatter: simple
+    filename: admission.log
+    maxBytes: 10485760 # 10MB
+    backupCount: 20
+    encoding: utf8
+
+  microchip_file:
+    class: logging.handlers.RotatingFileHandler
+    level: DEBUG
+    formatter: simple
+    filename: microchip.log
+    maxBytes: 10485760 # 10MB
+    backupCount: 20
+    encoding: utf8
+
+  rabbitbear_file:
+    class: logging.handlers.RotatingFileHandler
+    level: DEBUG
+    formatter: simple
+    filename: rabbitbear.log
+    maxBytes: 10485760 # 10MB
+    backupCount: 20
+    encoding: utf8
+
+loggers:
+  admission:
+    level: INFO 
+    handlers: [console, admission_file]
+    propagate: no
+
+  microchip:
+    level: DEBUG 
+    handlers: [console, microchip_file]
+    propagate: no
+
+  rabbitbear:
+    level: DEBUG 
+    handlers: [rabbitbear_file]
+    propagate: no
+
+root:
+  level: DEBUG
+  handlers: [console]
+...

@@ -1,8 +1,7 @@
 import numpy as np
 from assertpy import assert_that
-from rabbitbear.common import AxisIndex
-from rabbitbear.dataset import StandardScaler
-
+from rabbitbear.common import AxisIndex, RecurrenceMean
+from rabbitbear.dataset import minibatch_iterator
 
 samples_count = 1000
 features_count = 3
@@ -30,20 +29,17 @@ def data_loader(shuffle=True):
 
 
 def main():
-    standard_scaler = StandardScaler(data_loader, sample_axis, minibatch_size=32)
+    recurrence_mean = RecurrenceMean()
+    for mini_features, _, mini_count in minibatch_iterator(data_loader, sample_axis, minibatch_size=32):
+        recurrence_mean(mini_count, np.mean(mini_features, axis=sample_axis, keepdims=True))
 
     golden_shape = (1, features_count) if (sample_axis == AxisIndex.FIRST) else (features_count, 1)
-    assert_that(standard_scaler._mean.shape).is_equal_to(golden_shape)
+    assert_that(recurrence_mean.mean.shape).is_equal_to(golden_shape)
     golden_mean = np.mean(generate_features(), axis=sample_axis, keepdims=True)
-    difference_rate = abs(standard_scaler._mean - golden_mean) / standard_scaler._mean
+    difference_rate = abs(recurrence_mean.mean - golden_mean) / recurrence_mean.mean
     assert_that((difference_rate < tolerance).all()).is_true()
 
-    assert_that(standard_scaler._variance.shape).is_equal_to(golden_shape)
-    golden_variance = np.var(generate_features(), axis=sample_axis, keepdims=True)
-    difference_rate = abs(standard_scaler._variance - golden_variance) / standard_scaler._variance
-    assert_that((difference_rate < tolerance).all()).is_true()
-
-    assert_that(standard_scaler._samples_count).is_equal_to(samples_count)
+    assert_that(recurrence_mean._count).is_equal_to(samples_count)
 
 
 if (__name__ == '__main__'):
