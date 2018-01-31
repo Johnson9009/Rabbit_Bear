@@ -23,7 +23,7 @@ class RecurrenceMean(object):
     def __call__(self, count, mean):
         self._count += count
         if (self._mean is None):
-            self._mean = mean.copy()
+            self._mean = mean
         else:
             self._mean += (count / self._count) * (mean - self._mean)
 

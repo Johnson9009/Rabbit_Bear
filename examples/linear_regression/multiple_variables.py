@@ -49,7 +49,7 @@ def forward_propagation(features, parameters, sample_axis=AxisIndex.FIRST):
 
 def compute_cost(predicts, labels, sample_axis=AxisIndex.FIRST):
     ''' Compute averaged cost using all samples. '''
-    return cost.l2_loss(predicts, labels, sample_axis)
+    return cost.l2(predicts, labels, sample_axis)
 
 
 def back_propagation(features, labels, predicts, sample_axis=AxisIndex.FIRST):
@@ -103,8 +103,8 @@ def main():
     test_features = standard_scaler.transform(test_features)
     test_predicts = predict(test_features, parameters, sample_axis)
 
-    logger.debug(parameters)
-    logger.debug(test_predicts)
+    logger.info(parameters)
+    logger.info(test_predicts)
     iterCostPlot.close()
 
 

@@ -35,12 +35,12 @@ def main():
     golden_shape = (1, features_count) if (sample_axis == AxisIndex.FIRST) else (features_count, 1)
     assert_that(standard_scaler._mean.shape).is_equal_to(golden_shape)
     golden_mean = np.mean(generate_features(), axis=sample_axis, keepdims=True)
-    difference_rate = abs(standard_scaler._mean - golden_mean) / standard_scaler._mean
+    difference_rate = abs((standard_scaler._mean - golden_mean) / standard_scaler._mean)
     assert_that((difference_rate < tolerance).all()).is_true()
 
     assert_that(standard_scaler._variance.shape).is_equal_to(golden_shape)
     golden_variance = np.var(generate_features(), axis=sample_axis, keepdims=True)
-    difference_rate = abs(standard_scaler._variance - golden_variance) / standard_scaler._variance
+    difference_rate = abs((standard_scaler._variance - golden_variance) / standard_scaler._variance)
     assert_that((difference_rate < tolerance).all()).is_true()
 
     assert_that(standard_scaler._samples_count).is_equal_to(samples_count)

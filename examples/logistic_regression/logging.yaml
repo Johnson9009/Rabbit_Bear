@@ -53,7 +53,7 @@ loggers:
     propagate: no
 
   rabbitbear:
-    level: DEBUG 
+    level: INFO 
     handlers: [rabbitbear_file]
     propagate: no
 

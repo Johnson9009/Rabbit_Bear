@@ -129,7 +129,7 @@ def forward_propagation(features, parameters):
 
 def compute_cost(predicts, labels, sample_axis=AxisIndex.FIRST):
     ''' Compute averaged cost using all samples. '''
-    return cost.l2_loss(predicts, labels, sample_axis)
+    return cost.l2(predicts, labels, sample_axis)
 
 
 def compute_dataset_cost(data_loader, parameters, sample_axis=AxisIndex.FIRST):
