@@ -12,8 +12,6 @@ class ConfusionMatrix(object):
         labels = labels.squeeze()
         assert_that(predicts.shape).is_length(1)
         assert_that(labels.shape).is_equal_to(predicts.shape)
-        assert_that(np.sum(predicts)).is_equal_to(1)
-        assert_that(np.sum(labels)).is_equal_to(1)
 
         for predict, label in zip(predicts, labels):
             self._matrix[int(predict), int(label)] += 1
@@ -118,6 +116,10 @@ class Metric(object):
         assert_that(labels.shape).is_length(2)
 
         class_axis = AxisIndex.LAST if (self._sample_axis == AxisIndex.FIRST) else AxisIndex.FIRST
+        predicts = self._arbitrator(probas, self._sample_axis)
+        # The sample only can be classified to one kind.
+        assert_that((np.sum(predicts, axis=class_axis) <= 1).all()).is_true()
+
         for i in range(self._classes_count):
             class_probas = probas.take(i, axis=class_axis)
             class_labels = labels.take(i, axis=class_axis)
@@ -126,7 +128,9 @@ class Metric(object):
                 class_predicts = np.zeros(class_probas.shape)
                 class_predicts[class_probas >= threshold] = 1
                 self._confusion_maxtrices[i, j].update(class_predicts, class_labels)
-            self._confusion_maxtrices[i, -1].update(self._arbitrator(class_probas), class_labels)
+
+            class_predicts = predicts.take(i, axis=class_axis)
+            self._confusion_maxtrices[i, -1].update(class_predicts, class_labels)
 
     @property
     def precisions(self):

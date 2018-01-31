@@ -123,7 +123,7 @@ def hypothesis(features, parameters, sample_axis=AxisIndex.FIRST):
     return activation.sigmoid(logits)
 
 
-def arbitrator(probas):
+def arbitrator(probas, sample_axis=AxisIndex.FIRST):
     '''Get predicted labels from probabilities.'''
     predicts = np.zeros(probas.shape)
     predicts[probas >= 0.5] = 1
@@ -132,7 +132,7 @@ def arbitrator(probas):
 
 def predict(features, parameters, sample_axis=AxisIndex.FIRST):
     probabilities = hypothesis(features, parameters, sample_axis)
-    return arbitrator(probabilities)
+    return arbitrator(probabilities, sample_axis)
 
 
 def evaluation(data_loader, parameters, sample_axis=AxisIndex.FIRST):
@@ -184,6 +184,10 @@ def main():
     logger.info(parameters)
     training_metric = evaluation(get_data_loader(sample_axis), parameters, sample_axis)
     logger.info('Training accuracy: {}'.format(training_metric.accuracy))
+    test_features = np.array([[45, 85]]) if (sample_axis == AxisIndex.FIRST) else np.array([[45], [85]])
+    test_probas = hypothesis(test_features, parameters, sample_axis)
+    logger.info('The admission probability of student with exam 1 score of 45 and exam 2 score of 85 is {}'.format(test_probas))
+
     iterFitPlot.close()
     iterCostPlot.close()
 
