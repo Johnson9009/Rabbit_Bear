@@ -37,9 +37,6 @@ class IterativeFitPlot(object):
         line_parameters = {'W':-parameters['W'][0] / parameters['W'][1], 'b':-parameters['b'] / parameters['W'][1]}
         y = forward_propagation(x, line_parameters)
         self.line.set_data(x, y)
-        logger.debug('orig W: {}, orig b: {}'.format(parameters['W'], parameters['b']))
-        logger.debug('line W: {}, line b: {}'.format(line_parameters['W'], line_parameters['b']))
-        logger.debug('x: {}, y: {}'.format(x, y))
         plt.pause(0.000001)
 
     def close(self, hold_before_close=True):
