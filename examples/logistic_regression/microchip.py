@@ -3,7 +3,8 @@ import logging
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.optimize import fmin_bfgs
-from rabbitbear import cost, activation
+from rabbitbear import cost
+from rabbitbear.activation import Sigmoid
 from rabbitbear.evaluation import Metric
 from rabbitbear.common import AxisIndex, RecurrenceMean
 from rabbitbear.dataset import minibatch_iterator, StandardScaler
@@ -95,7 +96,7 @@ def forward_propagation(features, parameters, sample_axis=AxisIndex.FIRST):
 
 def hypothesis(features, parameters, sample_axis=AxisIndex.FIRST):
     logits = forward_propagation(features, parameters, sample_axis)
-    return activation.sigmoid(logits)
+    return Sigmoid.forward(logits)
 
 
 def arbitrator(probas, sample_axis=AxisIndex.FIRST):
@@ -110,14 +111,14 @@ def predict(features, parameters, sample_axis=AxisIndex.FIRST):
     return arbitrator(probabilities, sample_axis)
 
 
-def compute_cost(logits, labels, sample_axis=AxisIndex.FIRST):
+def compute_cost(logits, labels, coster):
     ''' Compute averaged cost using all samples. '''
-    return cost.sigmoid_cross_entropy(logits, labels, sample_axis)
+    return coster.forward(logits, labels)
 
 
-def back_propagation(features, labels, parameters, weight_decay, sample_axis=AxisIndex.FIRST):
+def back_propagation(features, logits, labels, parameters, weight_decay, coster, sample_axis=AxisIndex.FIRST):
     ''' Compute the gradients of parameters. '''
-    dZ = hypothesis(features, parameters, sample_axis) - labels
+    dZ = coster.backward(logits, labels)
     samples_count = labels.shape[sample_axis]
     grads = {}
     if (sample_axis == AxisIndex.FIRST):
@@ -143,7 +144,7 @@ def fit(parameters, features, labels, maxiter, weight_decay):
         parameters['W'] = x[1:]
         parameters['b'] = x[0]
         logits = forward_propagation(features, parameters, AxisIndex.FIRST)
-        return compute_cost(logits, labels, AxisIndex.FIRST).flatten()
+        return compute_cost(logits, labels, cost.SigmoidCrossEntropy(AxisIndex.FIRST)).flatten()
 
     def fprime(x, features, labels):
         '''This function is responsible for gradient computation.'''
@@ -151,7 +152,7 @@ def fit(parameters, features, labels, maxiter, weight_decay):
         parameters['W'] = x[1:]
         parameters['b'] = x[0]
         logits = forward_propagation(features, parameters, AxisIndex.FIRST)
-        grads = back_propagation(features, labels, parameters, weight_decay, AxisIndex.FIRST)
+        grads = back_propagation(features, logits, labels, parameters, weight_decay, cost.SigmoidCrossEntropy(AxisIndex.FIRST), AxisIndex.FIRST)
         return np.r_[grads['b'], grads['W']].flatten()
 
     x0 = np.r_[parameters['b'], parameters['W']]
@@ -167,11 +168,11 @@ def evaluation(data_loader, parameters, sample_axis=AxisIndex.FIRST):
     return metric
 
 
-def compute_dataset_cost(data_loader, parameters, sample_axis=AxisIndex.FIRST):
+def compute_dataset_cost(data_loader, parameters, coster, sample_axis=AxisIndex.FIRST):
     recurrence_mean = RecurrenceMean()
     for features, labels, count in minibatch_iterator(data_loader, sample_axis, minibatch_size=None):
         logits = forward_propagation(features, parameters, sample_axis)
-        recurrence_mean(count, compute_cost(logits, labels, sample_axis))
+        recurrence_mean(count, compute_cost(logits, labels, coster))
     return np.squeeze(recurrence_mean.mean)
 
 
@@ -182,9 +183,10 @@ def main():
     weight_decay = 1
     sample_axis = AxisIndex.FIRST
     train_using_bfgs = True
+    coster = cost.SigmoidCrossEntropy(sample_axis)
 
     parameters = initialize_parameters(27, Initializer(Zero()), sample_axis)
-    dataset_cost = compute_dataset_cost(get_data_loader(sample_axis), parameters, sample_axis)
+    dataset_cost = compute_dataset_cost(get_data_loader(sample_axis), parameters, coster, sample_axis)
     logger.info('Cost at initial parameters (zeros): {}'.format(dataset_cost))
 
     iterFitPlot = IterativeFitPlot(weight_decay)
@@ -203,8 +205,8 @@ def main():
             for mini_batch in minibatch_iterator(get_data_loader(sample_axis), sample_axis, minibatch_size=None):
                 mini_features, mini_labels, mini_count = mini_batch
                 mini_logits = forward_propagation(mini_features, parameters, sample_axis)
-                recurrence_mean(mini_count, compute_cost(mini_logits, mini_labels, sample_axis))
-                grads = back_propagation(mini_features, mini_labels, parameters, weight_decay, sample_axis)
+                recurrence_mean(mini_count, compute_cost(mini_logits, mini_labels, coster))
+                grads = back_propagation(mini_features, mini_logits, mini_labels, parameters, weight_decay, coster, sample_axis)
                 parameters = update_parameters(parameters, grads, learning_rate)
                 if (epoch == 0):
                     iterFitPlot.scatter_samples(mini_features, mini_labels)

@@ -47,9 +47,9 @@ def forward_propagation(features, parameters, sample_axis=AxisIndex.FIRST):
         return np.dot(W, features) + b
 
 
-def compute_cost(predicts, labels, sample_axis=AxisIndex.FIRST):
+def compute_cost(predicts, labels, coster):
     ''' Compute averaged cost using all samples. '''
-    return cost.l2(predicts, labels, sample_axis)
+    return coster.forward(predicts, labels)
 
 
 def back_propagation(features, labels, predicts, sample_axis=AxisIndex.FIRST):
@@ -81,6 +81,7 @@ def main():
     epochs_count = 50
     learning_rate = 1
     sample_axis = AxisIndex.FIRST
+    coster = cost.L2(sample_axis)
 
     iterCostPlot = IterativeCostPlot(learning_rate, step=5)
     standard_scaler = StandardScaler(get_data_loader(sample_axis), sample_axis, minibatch_size=None)
@@ -91,7 +92,7 @@ def main():
         for mini_features, mini_labels, mini_count in minibatch_iterator(get_data_loader(sample_axis), sample_axis, minibatch_size=None):
             mini_features = standard_scaler.transform(mini_features)
             mini_predicts = forward_propagation(mini_features, parameters, sample_axis)
-            recurrence_mean(mini_count, compute_cost(mini_predicts, mini_labels, sample_axis))
+            recurrence_mean(mini_count, compute_cost(mini_predicts, mini_labels, coster))
             grads = back_propagation(mini_features, mini_labels, mini_predicts, sample_axis)
             parameters = update_parameters(parameters, grads, learning_rate)
 

@@ -3,7 +3,7 @@ import mxnet as mx
 from mxnet import ndarray as nd
 from assertpy import assert_that
 from rabbitbear import cost
-from rabbitbear import activation
+from rabbitbear.activation import Linear, Sigmoid
 from rabbitbear.common import AxisIndex, RecurrenceMean
 from rabbitbear.dataset import minibatch_iterator
 
@@ -35,7 +35,7 @@ def initialize_parameters(features_count, sample_axis=AxisIndex.FIRST):
 
 
 def forward_propagation(features, parameters, sample_axis=AxisIndex.FIRST,
-                        activation=activation.none):
+                        activator=Linear):
     ''' Using inputs and parameters to compute the final predictions. '''
     W = parameters['W']
     b = parameters['b']
@@ -43,7 +43,7 @@ def forward_propagation(features, parameters, sample_axis=AxisIndex.FIRST,
         Z = np.dot(features, W) + b
     else:
         Z = np.dot(W, features) + b
-    return activation(Z)
+    return activator.forward(Z)
 
 
 def main():
@@ -55,18 +55,20 @@ def main():
     ce_recur_mean = RecurrenceMean()
     golden_ce_recur_mean = RecurrenceMean()
     golden_ce = mx.gluon.loss.SigmoidBCELoss(True, batch_axis=int(sample_axis))
+    ce_coster = cost.CrossEntropy(sample_axis)
 
     sigmoid_ce_recur_mean = RecurrenceMean()
     golden_sigmoid_ce_recur_mean = RecurrenceMean()
     golden_sigmoid_ce = mx.gluon.loss.SigmoidBCELoss(batch_axis=int(sample_axis))
+    sigmoid_ce_coster = cost.SigmoidCrossEntropy(sample_axis)
 
     for features, labels, count in minibatch_iterator(get_data_loader(sample_axis), sample_axis, minibatch_size=None):
-        predicts = forward_propagation(features, parameters, sample_axis, activation.sigmoid)
-        ce_recur_mean(count, cost.cross_entropy(predicts, labels, sample_axis))
+        predicts = forward_propagation(features, parameters, sample_axis, Sigmoid)
+        ce_recur_mean(count, ce_coster.forward(predicts, labels))
         golden_ce_recur_mean(count, golden_ce(nd.array(predicts), nd.array(labels)).mean().asscalar())
 
         logits = forward_propagation(features, parameters, sample_axis)
-        sigmoid_ce_recur_mean(count, cost.sigmoid_cross_entropy(logits, labels, sample_axis))
+        sigmoid_ce_recur_mean(count, sigmoid_ce_coster.forward(logits, labels))
         golden_sigmoid_ce_recur_mean(count, golden_sigmoid_ce(nd.array(logits), nd.array(labels)).mean().asscalar())
 
     assert_that(ce_recur_mean.mean.shape).is_equal_to(golden_ce_recur_mean.mean.shape)

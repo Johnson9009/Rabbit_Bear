@@ -49,12 +49,12 @@ class IterativeFitPlot(object):
         plt.close(self.fig)
 
 
-def cost_visualization(data_loader, parameters, sample_axis=AxisIndex.FIRST):
+def cost_visualization(data_loader, parameters, coster, sample_axis=AxisIndex.FIRST):
     meshgrid_w, meshgrid_b = np.meshgrid(np.linspace(-1, 4, 10), np.linspace(-10, 10, 10))
     meshgrid_costs = []
     for w, b in zip(np.ravel(meshgrid_w), np.ravel(meshgrid_b)):
         cur_parameters = {'W' : w, 'b' : b}
-        meshgrid_costs.append(compute_dataset_cost(data_loader, cur_parameters, sample_axis))
+        meshgrid_costs.append(compute_dataset_cost(data_loader, cur_parameters, coster, sample_axis))
     meshgrid_costs = np.reshape(meshgrid_costs, meshgrid_w.shape)
 
     # set up a figure twice as wide as it is tall
@@ -127,16 +127,16 @@ def forward_propagation(features, parameters):
     return np.dot(features, W) + b
 
 
-def compute_cost(predicts, labels, sample_axis=AxisIndex.FIRST):
+def compute_cost(predicts, labels, coster):
     ''' Compute averaged cost using all samples. '''
-    return cost.l2(predicts, labels, sample_axis)
+    return coster.forward(predicts, labels)
 
 
-def compute_dataset_cost(data_loader, parameters, sample_axis=AxisIndex.FIRST):
+def compute_dataset_cost(data_loader, parameters, coster, sample_axis=AxisIndex.FIRST):
     recurrence_mean = RecurrenceMean()
     for features, labels, count in minibatch_iterator(data_loader, sample_axis, minibatch_size=None):
         predicts = forward_propagation(features, parameters)
-        recurrence_mean(count, compute_cost(predicts, labels))
+        recurrence_mean(count, compute_cost(predicts, labels, coster))
     return np.squeeze(recurrence_mean.mean)
 
 
@@ -162,6 +162,7 @@ def main():
     # dataset_generator(10000, 550)
     epochs_count = 200
     learning_rate = 0.01
+    coster = cost.L2()
 
     iterFitPlot = IterativeFitPlot()
     iterCostPlot = IterativeCostPlot(learning_rate, has_validate=True, step=5)
@@ -171,22 +172,22 @@ def main():
         recurrence_mean = RecurrenceMean()
         for mini_features, mini_labels, mini_count in minibatch_iterator(get_data_loader('train'), drop_tail=True):
             mini_predicts = forward_propagation(mini_features, parameters)
-            recurrence_mean(mini_count, compute_cost(mini_predicts, mini_labels))
+            recurrence_mean(mini_count, compute_cost(mini_predicts, mini_labels, coster))
             grads = back_propagation(mini_features, mini_labels, mini_predicts)
             parameters = update_parameters(parameters, grads, learning_rate)
             if (epoch == 0):
                 iterFitPlot.scatter_samples(mini_features, mini_labels)
 
         epoch_train_cost = np.squeeze(recurrence_mean.mean)
-        epoch_validate_cost = compute_dataset_cost(get_data_loader('validate'), parameters)
+        epoch_validate_cost = compute_dataset_cost(get_data_loader('validate'), parameters, coster)
         logger.info('Cost after epoch %d: %f' % (epoch, epoch_train_cost))
         iterFitPlot.draw_fit_line(parameters)
         iterCostPlot.update(epoch_train_cost, epoch_validate_cost)
 
-    logger.debug(parameters)
+    logger.info(parameters)
     iterFitPlot.close()
     iterCostPlot.close()
-    cost_visualization(get_data_loader('test'), parameters)
+    cost_visualization(get_data_loader('test'), parameters, coster)
 
 
 if (__name__ == '__main__'):
