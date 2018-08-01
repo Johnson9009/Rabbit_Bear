@@ -1,6 +1,28 @@
 import numpy as np
+from assertpy import assert_that
 from .common import AxisIndex
 from .activation import Sigmoid
+
+
+class Softmax(object):
+    def __init__(self, sample_axis=AxisIndex.FIRST):
+        self._sample_axis = sample_axis
+        self._class_axis = AxisIndex.LAST if (sample_axis == AxisIndex.FIRST) else AxisIndex.FIRST
+        self._latest_forward_result = None
+
+    def forward(self, logits):
+        assert_that(np.shape(logits)).is_length(2)
+        # In order to avoiding overflow and underflow, every logit need to subtract the maximal logit in its sample.
+        logits -= np.max(logits, axis=self._class_axis, keepdims=True)
+        exp_logits = np.exp(logits)
+        self._latest_forward_result = exp_logits / np.sum(exp_logits, axis=self._class_axis, keepdims=True)
+        return self._latest_forward_result
+
+    def backward(self):
+        # The farward method must be called before calling backward method.
+        assert_that(self._latest_forward_result).is_not_none()
+        s = self._latest_forward_result
+        return s * (np.eye(s.shape[self._sample_axis]) - s)
 
 
 class Cost(object):
